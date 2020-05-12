@@ -161,7 +161,7 @@ async function sendFeedback(runId, workSpaceId, workSpaceName) {
             await invokeServiceNowScriptedRestAPI(sericeNowMessage);
             await discardPlan(runId);
         }
-        else if ("policy_checked" == status || "cost_estimated" == status || "policy_override" == status) {
+        else if ("policy_checked" == status || "cost_estimated" == status || "policy_override" == status || "planned_and_finished" == status) {
             checkStatus = false;
             console.log("Sentinel policy passed, or ready to override");
             let isPlanChanged = await hasPlanChanged(runId);
@@ -174,7 +174,9 @@ async function sendFeedback(runId, workSpaceId, workSpaceName) {
                 }
                 await invokeServiceNowScriptedRestAPI(sericeNowMessage);
             }
-            await discardPlan(runId);
+            if(status != "planned_and_finished"){
+               await discardPlan(runId);
+            }
         }
 
     } while (checkStatus);
