@@ -41,10 +41,20 @@ async function main() {
 
         // Step 2 Invoke Plan for each workspace and check status
         for (let i = 0; i < workSpaces.length; i++) {
-            if ("finished" == workSpaces[i].runStatus || "discarded" == workSpaces[i].runStatus || "cancelled" == workSpaces[i].runStatus) {
+            if ("finished" == workSpaces[i].runStatus || "organization_policy_passed" == workSpaces[i].runStatus ||  "discarded" == workSpaces[i].runStatus || "cancelled" == workSpaces[i].runStatus) {
+                try{
                 console.log("Invoking plan on :" + workSpaces[i].workspaceName);
                 let planRunId = await run(workSpaces[i].workspaceId);
                 await sendFeedback(planRunId, workSpaces[i].workspaceId, workSpaces[i].workspaceName);
+                }catch(err){
+                    let sericeNowMessage = {
+                        "TFEWorkspaceId": workSpaceId,
+                        "TFEWorkspaceName": workSpaceName,
+                        "Message": "Error in Drift Detection!"
+                    }
+                    await invokeServiceNowScriptedRestAPI(sericeNowMessage);
+
+                }
             }
         }
 
@@ -149,7 +159,7 @@ async function sendFeedback(runId, workSpaceId, workSpaceName) {
                 "Message": "Plan execution failed!"
             }
             await invokeServiceNowScriptedRestAPI(sericeNowMessage);
-
+            await discardPlan(runId);
         }
         else if ("policy_checked" == status || "cost_estimated" == status) {
             checkStatus = false;
@@ -164,6 +174,7 @@ async function sendFeedback(runId, workSpaceId, workSpaceName) {
                 }
                 await invokeServiceNowScriptedRestAPI(sericeNowMessage);
             }
+            await discardPlan(runId);
         }
 
     } while (checkStatus);
@@ -209,6 +220,21 @@ async function hasPlanChanged(runId) {
         console.log("Error in hasPlanChanged:" + err.message);
         throw new Error(`Error in hasPlanChanged ${err.message}`);
     }
+}
+
+async function discardPlan(runId) {
+    try {
+        const terraformDiscardPlanEndpoint = "https://" + terraformHost + "/api/v2/runs/" + runId + "/actions/discard";
+        console.log("terraformDiscardPlanEndpoint:" + terraformDiscardPlanEndpoint);
+        var data = { "comment": "Drift detection pipeline:discard plan" }
+        const res = await axios.post(terraformDiscardPlanEndpoint, data, options);
+        console.log("run response:" + JSON.stringify(res.data));
+    }
+    catch (err) {
+        console.log("Error in discardPlan:" + err.message);
+        throw new Error(`Error in discardPlan ${err.message}`);
+    }
+
 }
 
 
