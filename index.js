@@ -8,7 +8,6 @@ var organizationName;
 var options;
 var terraformHost;
 var serviceNowEndPoint;
-//var serviceNowEndPoint = "https://dev63722.service-now.com/api/482432/tfe_notification_listener";
 
 
 async function main() {
@@ -42,18 +41,19 @@ async function main() {
 
         // Step 2 Invoke Plan for each workspace and check status
         for (let i = 0; i < workSpaces.length; i++) {
-            if ("finished" == workSpaces[i].runStatus ||  "discarded" == workSpaces[i].runStatus || "cancelled" == workSpaces[i].runStatus) {
-                console.log("Invoking plan on :"+workSpaces[i].workspaceName);
+            if ("finished" == workSpaces[i].runStatus || "discarded" == workSpaces[i].runStatus || "cancelled" == workSpaces[i].runStatus) {
+                console.log("Invoking plan on :" + workSpaces[i].workspaceName);
                 let planRunId = await run(workSpaces[i].workspaceId);
-               await sendFeedback(planRunId);
+                await sendFeedback(planRunId, workSpaces[i].workspaceId, workSpaces[i].workspaceName);
             }
         }
 
 
     } catch (error) {
-        // Log Incident 
-        let sericeNowMessage = "Drift Detect Job Failed";
-        //  Create INC
+        let sericeNowMessage = {
+            "Message": "Error happened in Drift detection workflow";
+        }
+        await invokeServiceNowScriptedRestAPI(sericeNowMessage);
         core.setFailed(error.message);
     }
 }
@@ -132,34 +132,38 @@ async function sleep(ms) {
 }
 
 
-async function sendFeedback(runId) {
+async function sendFeedback(runId, workSpaceId, workSpaceName) {
     var checkStatus = true;
 
     do {
         await sleep(5000);
         const status = await checkRunStatus(runId);
-        console.log("status:"+status);
+        console.log("status:" + status);
 
         if ("errored" == status) {
             checkStatus = false;
-            console.log("Execution Failed in TFE");
-            // Send Failed Response
-           // let sericeNowMessage = await buildServiceNowFailureResponse("Execution Failed in TFE");
-           // await invokeServiceNowScriptedRestAPI(sericeNowMessage);
-            console.log("Setting pipeline Failed!");
-            core.setFailed("Execution Failed in TFE");
+            console.log("Plan invoke failed!");
+            let sericeNowMessage = {
+                "TFEWorkspaceId": workSpaceId,
+                "TFEWorkspaceName": workSpaceName,
+                "Message": "Plan execution failed!"
+            }
+            await invokeServiceNowScriptedRestAPI(sericeNowMessage);
+
         }
         else if ("policy_checked" == status || "cost_estimated" == status) {
             checkStatus = false;
             console.log("Sentinel policy passed, ready to apply");
             let isPlanChanged = await hasPlanChanged(runId);
-            console.log("isPlanChanged:"+isPlanChanged);
-            if(isPlanChanged) {
-                console.log("!!!!!!!!!!!!!!!!!!!Plan Changed !!!!!!!!!!!!!!!!!!");
+            console.log("isPlanChanged:" + isPlanChanged);
+            if (isPlanChanged) {
+                let sericeNowMessage = {
+                    "TFEWorkspaceId": workSpaceId,
+                    "TFEWorkspaceName": workSpaceName,
+                    "Message": "Drift Detected"
+                }
+                await invokeServiceNowScriptedRestAPI(sericeNowMessage);
             }
-           // let sericeNowMessage = await buildServiceNowSuccessResponse(outputs);
-            //console.log("sericeNowMessage:" + sericeNowMessage);
-           // await invokeServiceNowScriptedRestAPI(sericeNowMessage);
         }
 
     } while (checkStatus);
@@ -183,26 +187,6 @@ async function checkRunStatus(runId) {
 }
 
 
-async function buildServiceNowSuccessResponse(outputs) {
-
-    let response = {
-        "TaskId": workSpaceName,
-        "TFEResponse": {
-            "TFEWorkspaceId": workSpaceId,
-            "TFEWorkspaceName": workSpaceName,
-            "TFEOutputs": outputs
-        },
-        "Message": "Success"
-    }
-    return response;
-}
-
-async function buildServiceNowFailureResponse(reason) { 
-
-    console.log("response:" + JSON.stringify(response));
-    return response;
-}
-
 async function invokeServiceNowScriptedRestAPI(data) {
     try {
         let res = await axios.post(serviceNowEndPoint, data);
@@ -215,30 +199,15 @@ async function invokeServiceNowScriptedRestAPI(data) {
 }
 
 async function hasPlanChanged(runId) {
-
     try {
         let planUrl = "https://" + terraformHost + "/api/v2/runs/" + runId + "/plan";
         let res = await axios.get(planUrl, options);
-        console.log("Plan:"+JSON.stringify(res.data.data));
+        console.log("Plan:" + JSON.stringify(res.data.data));
         return res.data.data.attributes["has-changes"];
 
     } catch (err) {
         console.log("Error in hasPlanChanged:" + err.message);
         throw new Error(`Error in hasPlanChanged ${err.message}`);
-    }
-}
-
-
-async function getPlanStatus(runId) {
-
-    try {
-        let planUrl = "https://" + terraformHost + "/api/v2/runs/" + runId + "/plan";
-        let res = await axios.get(planUrl, options);
-        return res.data.data.attributes.status;
-
-    } catch (err) {
-        console.log("Error in getPlanStatus:" + err.message);
-        throw new Error(`Error in getPlanStatus${err.message}`);
     }
 }
 
