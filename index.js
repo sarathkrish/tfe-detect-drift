@@ -51,7 +51,7 @@ async function main() {
 
     } catch (error) {
         let sericeNowMessage = {
-            "Message": "Error happened in Drift detection workflow";
+            "Message": "Error happened in Drift detection workflow"
         }
         await invokeServiceNowScriptedRestAPI(sericeNowMessage);
         core.setFailed(error.message);
