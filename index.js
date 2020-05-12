@@ -219,6 +219,7 @@ async function hasPlanChanged(runId) {
     try {
         let planUrl = "https://" + terraformHost + "/api/v2/runs/" + runId + "/plan";
         let res = await axios.get(planUrl, options);
+        console.log("Plan:"+JSON.stringify(res.data.data));
         return res.data.data.attributes["has-changes"];
 
     } catch (err) {
