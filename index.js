@@ -41,7 +41,7 @@ async function main() {
 
         // Step 2 Invoke Plan for each workspace and check status
         for (let i = 0; i < workSpaces.length; i++) {
-            if ("finished" == workSpaces[i].runStatus || "organization_policy_passed" == workSpaces[i].runStatus ||  "discarded" == workSpaces[i].runStatus || "cancelled" == workSpaces[i].runStatus) {
+            if ("finished" == workSpaces[i].runStatus || "organization_policy_passed" == workSpaces[i].runStatus ||  "discarded" == workSpaces[i].runStatus || "cancelled" == workSpaces[i].runStatus || "commented" == workSpaces[i].runStatus ) {
                 try{
                 console.log("Invoking plan on :" + workSpaces[i].workspaceName);
                 let planRunId = await run(workSpaces[i].workspaceId);
