@@ -135,7 +135,7 @@ async function sendFeedback(runId) {
     var checkStatus = true;
 
     do {
-        await sleep(60000);
+        await sleep(5000);
         const status = await checkRunStatus(runId);
         console.log("status:"+status);
 
@@ -148,7 +148,7 @@ async function sendFeedback(runId) {
             console.log("Setting pipeline Failed!");
             core.setFailed("Execution Failed in TFE");
         }
-        else if ("policy_checked" == status) {
+        else if ("policy_checked" == status || "cost_estimated" == status) {
             checkStatus = false;
             console.log("Sentinel policy passed, ready to apply");
            // let sericeNowMessage = await buildServiceNowSuccessResponse(outputs);
