@@ -152,6 +152,11 @@ async function sendFeedback(runId) {
         else if ("policy_checked" == status || "cost_estimated" == status) {
             checkStatus = false;
             console.log("Sentinel policy passed, ready to apply");
+            let isPlanChanged = await hasPlanChanged(runId);
+            console.log("isPlanChanged:"+isPlanChanged);
+            if(isPlanChanged) {
+                console.log("!!!!!!!!!!!!!!!!!!!Plan Changed !!!!!!!!!!!!!!!!!!");
+            }
            // let sericeNowMessage = await buildServiceNowSuccessResponse(outputs);
             //console.log("sericeNowMessage:" + sericeNowMessage);
            // await invokeServiceNowScriptedRestAPI(sericeNowMessage);
@@ -209,6 +214,18 @@ async function invokeServiceNowScriptedRestAPI(data) {
 
 }
 
+async function hasPlanChanged(runId) {
+
+    try {
+        let planUrl = "https://" + terraformHost + "/api/v2/runs/" + runId + "/plan";
+        let res = await axios.get(planUrl, options);
+        return res.data.data.attributes["has-changes"];
+
+    } catch (err) {
+        console.log("Error in hasPlanChanged:" + err.message);
+        throw new Error(`Error in hasPlanChanged ${err.message}`);
+    }
+}
 
 
 async function getPlanStatus(runId) {
