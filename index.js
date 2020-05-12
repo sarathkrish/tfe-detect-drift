@@ -44,7 +44,7 @@ async function main() {
         for (let i = 0; i < workSpaces.length; i++) {
             if ("finished" == workSpaces[i].runStatus || "organization_policy_passed" == workSpaces[i].runStatus || "discarded" == workSpaces[i].runStatus || "cancelled" == workSpaces[i].runStatus) {
                 let planRunId = await run(workSpaces[i].workspaceId);
-                sendFeedback(planRunId);
+               await sendFeedback(planRunId);
             }
         }
 
@@ -155,9 +155,6 @@ async function sendFeedback(runId) {
             //console.log("sericeNowMessage:" + sericeNowMessage);
            // await invokeServiceNowScriptedRestAPI(sericeNowMessage);
         }
-
-
-
 
     } while (checkStatus);
 
