@@ -42,7 +42,7 @@ async function main() {
 
         // Step 2 Invoke Plan for each workspace and check status
         for (let i = 0; i < workSpaces.length; i++) {
-            if ("finished" == workSpaces[i].runStatus) {
+            if ("finished" == workSpaces[i].runStatus || "organization_policy_passed" == workSpaces[i].runStatus || "discarded" == workSpaces[i].runStatus || "cancelled" == workSpaces[i].runStatus) {
                 let planRunId = await run(workSpaces[i].workspaceId);
                 sendFeedback(planRunId);
             }
@@ -137,22 +137,23 @@ async function sendFeedback(runId) {
     do {
         await sleep(60000);
         const status = await checkRunStatus(runId);
+        console.log("status:"+status);
 
         if ("errored" == status) {
             checkStatus = false;
             console.log("Execution Failed in TFE");
             // Send Failed Response
-            let sericeNowMessage = await buildServiceNowFailureResponse("Execution Failed in TFE");
-            await invokeServiceNowScriptedRestAPI(sericeNowMessage);
+           // let sericeNowMessage = await buildServiceNowFailureResponse("Execution Failed in TFE");
+           // await invokeServiceNowScriptedRestAPI(sericeNowMessage);
             console.log("Setting pipeline Failed!");
             core.setFailed("Execution Failed in TFE");
         }
         else if ("policy_checked" == status) {
             checkStatus = false;
             console.log("Sentinel policy passed, ready to apply");
-            let sericeNowMessage = await buildServiceNowSuccessResponse(outputs);
-            console.log("sericeNowMessage:" + sericeNowMessage);
-            await invokeServiceNowScriptedRestAPI(sericeNowMessage);
+           // let sericeNowMessage = await buildServiceNowSuccessResponse(outputs);
+            //console.log("sericeNowMessage:" + sericeNowMessage);
+           // await invokeServiceNowScriptedRestAPI(sericeNowMessage);
         }
 
 
@@ -162,7 +163,7 @@ async function sendFeedback(runId) {
 
 }
 
-async function checkRunStatus() {
+async function checkRunStatus(runId) {
 
     try {
         const terraformRunStatusEndpoint = "https://" + terraformHost + "/api/v2/runs/" + runId;
@@ -193,37 +194,7 @@ async function buildServiceNowSuccessResponse(outputs) {
     return response;
 }
 
-async function buildServiceNowFailureResponse(reason) {
-
-    let response = {
-        TaskId: workSpaceName,
-        TFEResponse: {
-            TFEWorkspaceId: workSpaceId,
-            TFEWorkspaceName: workSpaceName,
-            Reason: reason
-        },
-        Message: "Failed"
-    };
-    let planStatus = await getPlanStatus();
-    if ("errored" == planStatus) {
-        response.TFEResponse.Reason = "Terraform Plan Failed";
-        console.log("response:" + JSON.stringify(response));
-        return response;
-    }
-
-    let sentinalResults = await fetchSentinelPolicyDetails();
-    if (sentinalResults.status == false) {
-        response.TFEResponse.Reason = "Sentinel Policy Failed";
-        response.TFEResponse.Policies = sentinalResults.policies;
-        console.log("response:" + JSON.stringify(response));
-        return response;
-    }
-    let runStatus = await getRunStatus();
-    if (runStatus == 'errored') {
-        response.TFEResponse.Reason = "Terraform Apply Failed";
-        console.log("response:" + JSON.stringify(response));
-        return response;
-    }
+async function buildServiceNowFailureResponse(reason) { 
 
     console.log("response:" + JSON.stringify(response));
     return response;
@@ -242,7 +213,7 @@ async function invokeServiceNowScriptedRestAPI(data) {
 
 
 
-async function getPlanStatus() {
+async function getPlanStatus(runId) {
 
     try {
         let planUrl = "https://" + terraformHost + "/api/v2/runs/" + runId + "/plan";

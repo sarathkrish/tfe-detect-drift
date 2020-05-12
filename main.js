@@ -126,7 +126,7 @@ async function getAllWorkspaces(){
                        "workspaceId":workspaceId,
                        "workspaceName":workspaceName,
                        "runId":runId,
-                       "runStatus":runStatus
+                       "runStatus":status
                    }
         );
 
