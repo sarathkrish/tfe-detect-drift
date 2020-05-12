@@ -1,0 +1,24 @@
+{
+  "name": "tfe-detect-drift",
+  "version": "1.0.0",
+  "description": "Terraform enterprise detect drift",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sarathkrish/tfe-detect-drift.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sarathkrish/tfe-detect-drift/issues"
+  },
+  "homepage": "https://github.com/sarathkrish/tfe-detect-drift#readme",
+  "dependencies": {
+    "@actions/core": "^1.2.4",
+    "axios": "^0.19.2"
+  }
+}

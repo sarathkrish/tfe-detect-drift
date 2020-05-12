@@ -1,0 +1,23 @@
+# action.yml
+name: 'Terraform Detect Drift'
+description: 'Run plan on existing workspace and detect drift'
+inputs:
+  terraformHost:
+    description: 'Terraform Cloud Token.'
+    required: true
+  terraformToken:
+    description: 'Terraform Cloud Token.'
+    required: true
+  terraformOrg:
+    description: 'Terraform Cloud Organization.'
+    required: true
+  serviceNowUrl:
+     description: 'serviceNowUrl'
+     required: true
+runs:
+  using: 'node12'
+  main: 'index.js'
+
+branding:
+  icon: 'play'  
+  color: 'green'
